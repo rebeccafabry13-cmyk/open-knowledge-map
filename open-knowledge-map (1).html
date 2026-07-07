@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Open Knowledge Map — CSU Library</title>
+<meta name="description" content="An Open Access Week treasure hunt from Charles Sturt University Library. Follow the trail from paywall to open access.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  #okm-root{
+    --ink:#1C2B39;
+    --ink-soft:#4A5A63;
+    --paper:#F1ECDF;
+    --paper-alt:#E8E1CF;
+    --paper-line: rgba(28,43,57,0.12);
+    --teal:#2F6F62;
+    --teal-dark:#1D453B;
+    --teal-tint:#DCE9E5;
+    --gold:#C9A227;
+    --gold-soft:#EAD98C;
+    --coral:#B24C42;
+    --coral-tint:#F3E0DD;
+    --white:#FFFDF8;
+    --radius:14px;
+    --shadow: 0 6px 20px rgba(28,43,57,0.10);
+    --focus: 3px solid #1D453B;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Public Sans', system-ui, sans-serif;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  #okm-root, #okm-root *{box-sizing:border-box;}
+  #okm-root h1, #okm-root h2, #okm-root h3, #okm-root .display{
+    font-family:'Fraunces', Georgia, serif;
+    font-weight:600;
+    letter-spacing:-0.01em;
+    color:var(--ink);
+  }
+  #okm-root .mono{
+    font-family:'IBM Plex Mono', monospace;
+    letter-spacing:0.02em;
+  }
+  #okm-root a{color:var(--teal-dark);}
+  #okm-root button{font-family:inherit;}
+  #okm-root *:focus-visible{outline:var(--focus); outline-offset:3px;}
+  @media (prefers-reduced-motion: reduce){
+    #okm-root *{animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important;}
+  }
+
+  /* ===== Shell ===== */
+  #okm-root .app{max-width:840px; margin:0 auto; padding:0 20px 80px;}
+  #okm-root .site-header{
+    padding:28px 20px 18px;
+    max-width:840px; margin:0 auto;
+    display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  }
+  #okm-root .brand{display:flex; align-items:baseline; gap:10px;}
+  #okm-root .brand .mark{
+    font-family:'Fraunces', serif; font-weight:700; font-size:1.05rem;
+    background:var(--ink); color:var(--paper);
+    padding:3px 9px; border-radius:6px; letter-spacing:0.02em;
+  }
+  #okm-root .brand .sub{font-size:0.82rem; color:var(--ink-soft);}
+  #okm-root .oa-tag{
+    font-family:'IBM Plex Mono', monospace; font-size:0.72rem;
+    color:var(--teal-dark); background:var(--teal-tint);
+    padding:5px 10px; border-radius:20px; letter-spacing:0.03em;
+  }
+
+  /* ===== Trail / progress map ===== */
+  #okm-root .trail-wrap{
+    position:sticky; top:0; z-index:20;
+    background:linear-gradient(var(--paper) 78%, transparent);
+    padding:10px 20px 16px;
+  }
+  #okm-root .trail-inner{max-width:840px; margin:0 auto;}
+  #okm-root .trail-svg-scroll{overflow-x:auto; overflow-y:hidden; padding-bottom:4px; scrollbar-width:thin;}
+  #okm-root .trail-track{display:flex; align-items:center; min-width:640px;}
+  #okm-root .stamp-col{display:flex; flex-direction:column; align-items:center; flex:1; position:relative;}
+  #okm-root .stamp{
+    width:38px; height:38px; border-radius:50%;
+    border:2.5px solid var(--ink-soft);
+    background:var(--paper-alt);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono', monospace; font-size:0.75rem; font-weight:500;
+    color:var(--ink-soft);
+    cursor:pointer;
+    transition:transform 0.25s ease, background 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+    flex-shrink:0;
+    position:relative; z-index:2;
+  }
+  #okm-root .stamp:disabled{cursor:not-allowed; opacity:0.55;}
+  #okm-root .stamp.current{border-color:var(--teal-dark); color:var(--teal-dark); background:var(--white);}
+  #okm-root .stamp.done{
+    background:var(--gold); border-color:var(--gold);
+    color:var(--teal-dark); transform:rotate(-6deg);
+  }
+  #okm-root .stamp.done::after{content:"✓";}
+  #okm-root .stamp-line{
+    position:absolute; top:19px; left:50%; width:100%; height:3px;
+    background-image:linear-gradient(to right, var(--ink-soft) 55%, transparent 0%);
+    background-size:9px 3px; background-repeat:repeat-x;
+    z-index:1;
+  }
+  #okm-root .stamp-col.line-filled .stamp-line{
+    background-image:none; background-color:var(--gold);
+  }
+  #okm-root .stamp-col:last-child .stamp-line{display:none;}
+  #okm-root .stamp-label{font-size:0.62rem; color:var(--ink-soft); margin-top:6px; text-align:center; max-width:70px; line-height:1.2;}
+
+  /* ===== Stage card ===== */
+  #okm-root .stage-card{
+    background:var(--white);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    border:1px solid var(--paper-line);
+    padding:34px clamp(20px,4vw,44px) 38px;
+    margin-top:10px;
+    animation:riseIn 0.4s ease both;
+  }
+  @keyframes riseIn{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;}}
+  #okm-root .eyebrow{
+    font-family:'IBM Plex Mono', monospace; font-size:0.72rem; letter-spacing:0.06em;
+    text-transform:uppercase; color:var(--teal-dark); margin:0 0 8px;
+  }
+  #okm-root .stage-card h2{font-size:clamp(1.4rem,3vw,1.85rem); margin:0 0 14px;}
+  #okm-root .lede{font-size:1.02rem; color:var(--ink-soft); max-width:60ch;}
+  #okm-root .divider{border:none; border-top:1px dashed var(--paper-line); margin:24px 0;}
+
+  /* ===== Buttons ===== */
+  #okm-root .btn{
+    display:inline-flex; align-items:center; gap:8px;
+    background:var(--teal-dark); color:var(--white);
+    border:none; border-radius:9px; padding:12px 20px;
+    font-size:0.95rem; font-weight:600; cursor:pointer;
+    transition:transform 0.15s ease, background 0.15s ease;
+  }
+  #okm-root .btn:hover{background:var(--teal);}
+  #okm-root .btn:active{transform:scale(0.98);}
+  #okm-root .btn.ghost{background:transparent; color:var(--teal-dark); border:1.5px solid var(--teal-dark);}
+  #okm-root .btn.ghost:hover{background:var(--teal-tint);}
+  #okm-root .btn:disabled{opacity:0.45; cursor:not-allowed;}
+  #okm-root .btn-row{display:flex; gap:12px; margin-top:26px; flex-wrap:wrap;}
+
+  /* ===== Generic pieces ===== */
+  #okm-root .compare-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:22px 0;}
+  @media (max-width:560px){#okm-root .compare-grid{grid-template-columns:1fr;}}
+  #okm-root .persona{
+    border:1.5px solid var(--paper-line); border-radius:12px; padding:18px;
+    background:var(--paper-alt);
+  }
+  #okm-root .persona h3{font-size:1.05rem; margin:0 0 8px;}
+  #okm-root .persona ul{margin:10px 0 0; padding-left:18px; font-size:0.93rem; color:var(--ink-soft);}
+  #okm-root .persona.win{background:var(--teal-tint); border-color:var(--teal);}
+
+  #okm-root .choice-list{display:flex; flex-direction:column; gap:10px; margin:20px 0;}
+  #okm-root .choice-btn{
+    text-align:left; padding:14px 16px; border-radius:10px;
+    border:1.5px solid var(--paper-line); background:var(--white);
+    cursor:pointer; font-size:0.95rem; color:var(--ink);
+    transition:border-color 0.15s ease, background 0.15s ease;
+  }
+  #okm-root .choice-btn:hover{border-color:var(--teal);}
+  #okm-root .choice-btn.selected{border-color:var(--teal-dark); background:var(--teal-tint); font-weight:600;}
+
+  #okm-root .feedback{
+    margin-top:14px; padding:14px 16px; border-radius:10px;
+    font-size:0.92rem; display:none;
+  }
+  #okm-root .feedback.show{display:block; animation:riseIn 0.3s ease both;}
+  #okm-root .feedback.good{background:var(--teal-tint); border:1px solid var(--teal);}
+  #okm-root .feedback.nudge{background:var(--coral-tint); border:1px solid var(--coral);}
+
+  /* Stop 2 sort */
+  #okm-root .bank{display:flex; flex-wrap:wrap; gap:10px; margin:18px 0;}
+  #okm-root .item-chip{
+    padding:10px 14px; border-radius:20px; border:1.5px solid var(--ink-soft);
+    background:var(--white); font-size:0.88rem; cursor:pointer;
+    transition:all 0.15s ease;
+  }
+  #okm-root .item-chip.active{background:var(--ink); color:var(--paper); border-color:var(--ink);}
+  #okm-root .item-chip.placed{opacity:0.35; cursor:not-allowed; text-decoration:line-through;}
+  #okm-root .bins{display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-top:14px;}
+  @media (max-width:560px){#okm-root .bins{grid-template-columns:1fr;}}
+  #okm-root .bin{
+    border:2px dashed var(--paper-line); border-radius:12px; padding:14px;
+    min-height:96px; background:var(--paper-alt); cursor:pointer;
+  }
+  #okm-root .bin:hover{border-color:var(--teal);}
+  #okm-root .bin h4{margin:0 0 6px; font-size:0.88rem; font-family:'IBM Plex Mono',monospace; color:var(--teal-dark);}
+  #okm-root .bin .placed-item{font-size:0.85rem; background:var(--white); padding:6px 10px; border-radius:8px; margin-top:6px; border:1px solid var(--paper-line);}
+
+  /* Stop 3 scenarios */
+  #okm-root .scenario{border:1.5px solid var(--paper-line); border-radius:12px; padding:18px; margin-bottom:16px; background:var(--paper-alt);}
+  #okm-root .scenario .tag{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; color:var(--teal-dark); background:var(--teal-tint); padding:3px 9px; border-radius:12px;}
+  #okm-root .yn-row{display:flex; gap:10px; margin-top:12px;}
+  #okm-root .yn-row button{flex:1;}
+  #okm-root .cheatsheet{margin-top:8px; padding:14px; background:var(--ink); color:var(--paper); border-radius:10px; font-size:0.85rem;}
+  #okm-root .cheatsheet div{padding:4px 0; border-bottom:1px dashed rgba(241,236,223,0.2);}
+  #okm-root .cheatsheet div:last-child{border-bottom:none;}
+
+  /* Stop 4 markers */
+  #okm-root .marker-grid{display:grid; gap:10px; margin:18px 0;}
+  #okm-root .marker{
+    border:1.5px solid var(--paper-line); border-radius:10px; overflow:hidden; background:var(--white);
+  }
+  #okm-root .marker-btn{
+    width:100%; text-align:left; padding:14px 16px; background:none; border:none;
+    display:flex; justify-content:space-between; align-items:center; cursor:pointer; font-size:0.95rem; font-weight:600; color:var(--ink);
+  }
+  #okm-root .marker-status{font-family:'IBM Plex Mono',monospace; font-size:0.75rem; color:var(--ink-soft);}
+  #okm-root .marker-body{max-height:0; overflow:hidden; transition:max-height 0.3s ease; padding:0 16px;}
+  #okm-root .marker-body.open{max-height:220px; padding-bottom:14px;}
+  #okm-root .marker-body p{margin:0; font-size:0.9rem; color:var(--ink-soft);}
+  #okm-root .csu-badge{display:inline-block; margin-top:16px; font-family:'IBM Plex Mono',monospace; font-size:0.72rem; background:var(--gold-soft); color:var(--ink); padding:5px 11px; border-radius:16px;}
+
+  /* Stop 5 attribution builder */
+  #okm-root .word-bank{display:flex; flex-wrap:wrap; gap:8px; margin:14px 0;}
+  #okm-root .word-tile{padding:8px 12px; border-radius:8px; border:1.5px solid var(--ink-soft); background:var(--white); font-size:0.85rem; cursor:pointer;}
+  #okm-root .word-tile.used{opacity:0.3; cursor:not-allowed;}
+  #okm-root .attribution-line{
+    min-height:52px; border:1.5px dashed var(--paper-line); border-radius:10px; padding:12px;
+    display:flex; align-items:center; flex-wrap:wrap; gap:6px; background:var(--paper-alt); font-size:0.9rem;
+  }
+  #okm-root .attribution-line .filled-tile{background:var(--teal-tint); border:1px solid var(--teal); padding:6px 10px; border-radius:6px;}
+
+  /* Stop 6 catalog */
+  #okm-root .cat-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:18px 0;}
+  @media (max-width:560px){#okm-root .cat-grid{grid-template-columns:1fr;}}
+  #okm-root .cat-card{
+    border:1.5px solid var(--paper-line); border-radius:12px; padding:16px; background:var(--paper-alt);
+    cursor:pointer; transition:border-color 0.15s ease;
+  }
+  #okm-root .cat-card.selected{border-color:var(--gold); background:var(--gold-soft);}
+  #okm-root .cat-card h4{margin:0 0 4px; font-size:0.98rem;}
+  #okm-root .cat-card .disc{font-family:'IBM Plex Mono',monospace; font-size:0.68rem; color:var(--teal-dark); text-transform:uppercase;}
+  #okm-root .cat-card p{font-size:0.85rem; color:var(--ink-soft); margin:8px 0 0;}
+  #okm-root textarea{
+    width:100%; border:1.5px solid var(--paper-line); border-radius:10px; padding:12px;
+    font-family:'Public Sans',sans-serif; font-size:0.92rem; resize:vertical; min-height:70px; background:var(--white);
+  }
+
+  /* Final action card */
+  #okm-root .card-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin:20px 0;}
+  #okm-root .action-choice{
+    border:2px solid var(--paper-line); border-radius:12px; padding:18px; text-align:left; background:var(--white);
+    cursor:pointer;
+  }
+  #okm-root .action-choice .emoji{font-size:1.5rem;}
+  #okm-root .action-choice h4{margin:10px 0 4px; font-size:1rem;}
+  #okm-root .action-choice p{font-size:0.85rem; color:var(--ink-soft); margin:0;}
+  #okm-root .action-choice.selected{border-color:var(--gold); background:var(--gold-soft);}
+
+  #okm-root .final-card{
+    margin-top:28px; border-radius:16px; padding:30px;
+    background:var(--ink); color:var(--paper);
+    position:relative; overflow:hidden;
+  }
+  #okm-root .final-card::before{
+    content:""; position:absolute; inset:0;
+    background-image:repeating-linear-gradient(45deg, rgba(241,236,223,0.03) 0 2px, transparent 2px 14px);
+  }
+  #okm-root .final-card .stamp-seal{
+    display:inline-block; background:var(--gold); color:var(--ink); font-family:'IBM Plex Mono',monospace;
+    font-size:0.7rem; padding:5px 12px; border-radius:20px; transform:rotate(-4deg); margin-bottom:14px;
+  }
+  #okm-root .final-card h3{color:var(--paper); font-size:1.5rem; margin:0 0 10px; position:relative;}
+  #okm-root .final-card p{color:var(--paper-alt); position:relative; font-size:0.98rem;}
+  #okm-root .final-card a.next-step{
+    display:inline-block; margin-top:16px; background:var(--gold); color:var(--ink);
+    padding:11px 18px; border-radius:8px; text-decoration:none; font-weight:600; font-size:0.9rem; position:relative;
+  }
+
+  #okm-root .start-hero{text-align:center; padding:20px 0 6px;}
+  #okm-root .start-hero .eyebrow{justify-content:center; display:flex;}
+  #okm-root .start-hero h1{font-size:clamp(1.9rem,5vw,2.7rem); margin:8px 0 16px; line-height:1.15;}
+  #okm-root .start-hero p.lede{margin:0 auto 26px; text-align:left;}
+  #okm-root .footer-note{text-align:center; font-size:0.78rem; color:var(--ink-soft); margin-top:40px; padding:0 20px;}
+  #okm-root .footer-note a{color:var(--ink-soft);}
+</style>
+</head>
+<body>
+
+<div id="okm-root">
+<header class="site-header">
+  <div class="brand">
+    <span class="mark">CSU Library</span>
+    <span class="sub">Open Access Week</span>
+  </div>
+  <span class="oa-tag">THE OPEN KNOWLEDGE MAP</span>
+</header>
+
+<div class="trail-wrap" id="trailWrap" style="display:none;">
+  <div class="trail-inner">
+    <div class="trail-svg-scroll">
+      <div class="trail-track" id="trailTrack"></div>
+    </div>
+  </div>
+</div>
+
+<main class="app">
+  <div id="stageContainer"></div>
+</main>
+
+<p class="footer-note">The Open Knowledge Map — built by Charles Sturt University Library for Open Access Week. Released under <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. Fork it, localise it, share it.</p>
+</div><!-- /#okm-root -->
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============== CONTENT ============== */
+  var STAGES = [
+    {id:"gate", label:"Paywall Gate"},
+    {id:"open", label:"What Makes\nIt Open?"},
+    {id:"licence", label:"Licence Lock"},
+    {id:"quality", label:"Quality Cave"},
+    {id:"remix", label:"Remix Road"},
+    {id:"vault", label:"Open Textbook\nVault"},
+    {id:"final", label:"Your Open\nStep"}
+  ];
+
+  var STATE_KEY = "openKnowledgeMap_progress_v1";
+  var state = loadState();
+
+  function loadState(){
+    try{
+      var raw = localStorage.getItem(STATE_KEY);
+      if(raw) return JSON.parse(raw);
+    }catch(e){}
+    return { started:false, currentStage:0, completed:[], data:{} };
+  }
+  function saveState(){
+    try{ localStorage.setItem(STATE_KEY, JSON.stringify(state)); }catch(e){}
+  }
+  function markComplete(idx){
+    if(state.completed.indexOf(idx) === -1) state.completed.push(idx);
+    saveState();
+  }
+  function goTo(idx){
+    state.currentStage = idx;
+    saveState();
+    render();
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+
+  /* ============== TRAIL RENDER ============== */
+  function renderTrail(){
+    var wrap = document.getElementById('trailWrap');
+    var track = document.getElementById('trailTrack');
+    if(!state.started){ wrap.style.display='none'; return; }
+    wrap.style.display='block';
+    track.innerHTML = '';
+    STAGES.forEach(function(s, i){
+      var col = document.createElement('div');
+      col.className = 'stamp-col';
+      var done = state.completed.indexOf(i) > -1;
+      if(done) col.classList.add('line-filled');
+
+      if(i < STAGES.length - 1){
+        var line = document.createElement('div');
+        line.className = 'stamp-line';
+        col.appendChild(line);
+      }
+
+      var btn = document.createElement('button');
+      btn.className = 'stamp' + (done ? ' done' : (i === state.currentStage ? ' current' : ''));
+      btn.setAttribute('aria-label', 'Stop ' + (i+1) + ': ' + s.label.replace('\n',' ') + (done ? ' (completed)' : ''));
+      var canGo = done || i === state.currentStage || i <= (state.completed.length);
+      btn.disabled = !canGo;
+      if(!done) btn.textContent = String(i+1);
+      btn.addEventListener('click', function(){ if(canGo) goTo(i); });
+      col.appendChild(btn);
+
+      var lab = document.createElement('div');
+      lab.className = 'stamp-label';
+      lab.textContent = s.label.split('\n')[0] + (s.label.indexOf('\n')>-1 ? ' ' + s.label.split('\n')[1] : '');
+      col.appendChild(lab);
+
+      track.appendChild(col);
+    });
+  }
+
+  /* ============== HELPERS ============== */
+  function el(tag, attrs, children){
+    var e = document.createElement(tag);
+    attrs = attrs || {};
+    Object.keys(attrs).forEach(function(k){
+      if(k === 'class') e.className = attrs[k];
+      else if(k === 'html') e.innerHTML = attrs[k];
+      else if(k === 'text') e.textContent = attrs[k];
+      else e.setAttribute(k, attrs[k]);
+    });
+    (children||[]).forEach(function(c){ if(c) e.appendChild(c); });
+    return e;
+  }
+
+  function stageShell(eyebrow, title, lede){
+    var card = el('div', {class:'stage-card'});
+    card.appendChild(el('p',{class:'eyebrow', text:eyebrow}));
+    card.appendChild(el('h2', {text:title}));
+    if(lede) card.appendChild(el('p',{class:'lede', text:lede}));
+    return card;
+  }
+
+  function continueBtn(label, onClick, disabled){
+    var row = el('div', {class:'btn-row'});
+    var b = el('button', {class:'btn'}, []);
+    b.textContent = label || 'Continue';
+    b.disabled = !!disabled;
+    b.addEventListener('click', onClick);
+    row.appendChild(b);
+    return {row:row, btn:b};
+  }
+
+  /* ============== STAGE 0: START ============== */
+  function renderStart(container){
+    var wrap = el('div', {class:'stage-card start-hero'});
+    wrap.appendChild(el('p', {class:'eyebrow', text:'OPEN ACCESS WEEK · CSU LIBRARY'}));
+    wrap.appendChild(el('h1', {text:'The Open Knowledge Map'}));
+    var p1 = el('p',{class:'lede'});
+    p1.innerHTML = 'Students in a subject are facing high resource costs and uneven access to learning materials. Your team has been asked to find a better path.<br><br>Follow the clues, unlock each stage of the map, and build a solution that\'s affordable, accessible, reusable and shareable.';
+    wrap.appendChild(p1);
+    var btnRow = el('div',{class:'btn-row'});
+    btnRow.style.justifyContent = 'center';
+    var startBtn = el('button', {class:'btn'});
+    startBtn.textContent = 'Begin the journey';
+    startBtn.addEventListener('click', function(){
+      state.started = true;
+      state.currentStage = 0;
+      saveState();
+      render();
+    });
+    btnRow.appendChild(startBtn);
+    wrap.appendChild(btnRow);
+    container.appendChild(wrap);
+  }
+
+  /* ============== STOP 1: PAYWALL GATE ============== */
+  function renderGate(container){
+    var card = stageShell('Stop 1 of 7 — The Paywall Gate', 'Two students, one subject, two very different weeks', 'Same lecture. Same assessment. Different outcomes — because of one thing: the cost of the textbook. Meet Amara and Jack.');
+
+    var grid = el('div',{class:'compare-grid'});
+    var amara = el('div',{class:'persona'});
+    amara.appendChild(el('h3',{text:'Amara'}));
+    var ul1 = el('ul');
+    ['Prescribed textbook: $180, bookshop or online only','Works two extra shifts this week to cover it','Buys the book in week 4','Three weeks behind on readings before she starts'].forEach(function(t){ ul1.appendChild(el('li',{text:t})); });
+    amara.appendChild(ul1);
+
+    var jack = el('div',{class:'persona win'});
+    jack.appendChild(el('h3',{text:'Jack'}));
+    var ul2 = el('ul');
+    ['Same subject — but his tutor linked an open textbook instead','Free. Online. Available from day one','Starts week 1 with everyone else','No shipping, no stock, no waiting'].forEach(function(t){ ul2.appendChild(el('li',{text:t})); });
+    jack.appendChild(ul2);
+
+    grid.appendChild(amara); grid.appendChild(jack);
+    card.appendChild(grid);
+
+    card.appendChild(el('hr',{class:'divider'}));
+    card.appendChild(el('p',{html:'<strong>What\'s different about Jack\'s experience — and what had to be true about his course materials for that to happen?</strong>'}));
+
+    var opts = ['The book cost nothing','The book was available immediately, with no stock or shipping delay','The book didn\'t depend on Jack\'s ability to pay upfront','All of the above'];
+    var list = el('div',{class:'choice-list'});
+    var feedback = el('div',{class:'feedback'});
+    var picked = false;
+    opts.forEach(function(opt, i){
+      var b = el('button',{class:'choice-btn'});
+      b.textContent = opt;
+      b.addEventListener('click', function(){
+        Array.prototype.forEach.call(list.children, function(c){ c.classList.remove('selected'); });
+        b.classList.add('selected');
+        picked = true;
+        feedback.className = 'feedback good show';
+        feedback.textContent = i === opts.length-1
+          ? 'Exactly. It wasn\'t one thing — it was the combination that made the difference. That\'s worth holding onto as we go.'
+          : 'True — and there\'s more to it than that. (Hint: all of these are true at once.)';
+        ctrl.btn.disabled = false;
+      });
+      list.appendChild(b);
+    });
+    card.appendChild(list);
+    card.appendChild(feedback);
+
+    card.appendChild(el('hr',{class:'divider'}));
+    card.appendChild(el('p',{class:'lede', html:'<em>Jack\'s textbook wasn\'t just free. It was <strong>open</strong> — and that\'s a different thing. Free-to-read and freely reusable aren\'t the same. Let\'s find out what actually makes something "open."</em>'}));
+
+    var ctrl = continueBtn('Continue to Stop 2', function(){
+      markComplete(0); goTo(1);
+    }, true);
+    card.appendChild(ctrl.row);
+
+    container.appendChild(card);
+  }
+
+  /* ============== STOP 2: WHAT MAKES IT OPEN ============== */
+  function renderOpen(container){
+    var card = stageShell('Stop 2 of 7 — What Makes It Open?', 'Sort each resource into the right category', 'Free and open aren\'t the same thing. Here are four resources a lecturer might link in a subject. Sort each one into the category it belongs to.');
+
+    var bins = [
+      {key:'free', title:'FREE', desc:'Costs nothing — but you can\'t legally reuse or adapt it'},
+      {key:'licensed', title:'LIBRARY LICENSED', desc:'CSU pays for access; restricted to enrolled students'},
+      {key:'oa', title:'OPEN ACCESS', desc:'Free to read, often research outputs — may or may not allow reuse'},
+      {key:'oer', title:'OER', desc:'Free AND openly licensed to reuse, adapt, and redistribute'}
+    ];
+    var items = [
+      {id:'a', text:'A journal article CSU Library pays a subscription to access', correct:'licensed', nudge:'That one\'s paid for by the Library on your behalf — access is real, but it\'s restricted to enrolled students and can\'t be freely redistributed.'},
+      {id:'b', text:'A peer-reviewed article published open access with a CC BY licence', correct:'oa', nudge:'This one\'s free to read as Open Access. (It also happens to carry reuse permissions — more on that at the next stop.)'},
+      {id:'c', text:'A YouTube video that\'s free to watch, all rights reserved', correct:'free', nudge:'Close — it\'s free to watch, but "all rights reserved" means you can\'t legally adapt or redistribute it. That\'s the key difference between free and open.'},
+      {id:'d', text:'An open textbook chapter, CC BY-NC, adapted by a lecturer for their subject', correct:'oer', nudge:'This is free AND openly licensed for reuse and adaptation — that combination is what makes it OER.'}
+    ];
+
+    var placedCount = 0;
+    var selected = null;
+
+    var bank = el('div',{class:'bank'});
+    var chipEls = {};
+    items.forEach(function(it){
+      var chip = el('button',{class:'item-chip'});
+      chip.textContent = it.text;
+      chip.addEventListener('click', function(){
+        if(chip.classList.contains('placed')) return;
+        Object.keys(chipEls).forEach(function(k){ chipEls[k].classList.remove('active'); });
+        chip.classList.add('active');
+        selected = it;
+      });
+      chipEls[it.id] = chip;
+      bank.appendChild(chip);
+    });
+    card.appendChild(bank);
+
+    var feedback = el('div',{class:'feedback'});
+    var binsWrap = el('div',{class:'bins'});
+    bins.forEach(function(b){
+      var binEl = el('div',{class:'bin'});
+      binEl.appendChild(el('h4',{text:b.title}));
+      binEl.appendChild(el('p',{text:b.desc, style:'font-size:0.8rem;color:var(--ink-soft);margin:0;'}));
+      binEl.addEventListener('click', function(){
+        if(!selected) return;
+        var it = selected;
+        var chip = chipEls[it.id];
+        if(chip.classList.contains('placed')) return;
+        chip.classList.add('placed');
+        chip.classList.remove('active');
+        var isCorrect = (it.correct === b.key);
+        var tag = el('div',{class:'placed-item'});
+        tag.textContent = (isCorrect ? '✓ ' : '↺ ') + it.text.slice(0,40) + (it.text.length>40?'…':'');
+        binEl.appendChild(tag);
+        feedback.className = 'feedback ' + (isCorrect ? 'good' : 'nudge') + ' show';
+        feedback.textContent = isCorrect ? 'Right where it belongs. ' + it.nudge : it.nudge;
+        selected = null;
+        placedCount++;
+        if(placedCount === items.length){ ctrl.btn.disabled = false; }
+      });
+      binsWrap.appendChild(binEl);
+    });
+    card.appendChild(binsWrap);
+    card.appendChild(feedback);
+
+    card.appendChild(el('hr',{class:'divider'}));
+    card.appendChild(el('p',{class:'lede', html:'<em>So OER isn\'t just "free stuff." It\'s free stuff you\'re allowed to change, translate, remix, or build on. But how do you know what you\'re allowed to do with any given resource? That\'s where Creative Commons licences come in.</em>'}));
+
+    var ctrl = continueBtn('Continue to Stop 3', function(){ markComplete(1); goTo(2); }, true);
+    card.appendChild(ctrl.row);
+    container.appendChild(card);
+  }
+
+  /* ============== STOP 3: LICENCE LOCK ============== */
+  function renderLicence(container){
+    var card = stageShell('Stop 3 of 7 — Licence Lock', 'Help Priya work out what she\'s allowed to do', 'Priya is building a new tutorial resource for her class. She\'s found three resources online. Every open resource carries a Creative Commons licence — a set of permissions the creator has chosen.');
+
+    var scenarios = [
+      {
+        code:'CC BY', question:'Priya wants to take a diagram from an open textbook and use it, unchanged, in her own slides — crediting the original author. Can she do this?',
+        answer:true, explain:'Yes. CC BY only requires attribution. Reuse, adaptation, even commercial use — all fine, as long as she credits the source.',
+        cheat:'CC BY — credit the creator, then reuse, adapt, even sell'
+      },
+      {
+        code:'CC BY-NC', question:'Priya wants to adapt a case study from an open resource and include it in a paid short course CSU is planning to sell externally. Can she do this?',
+        answer:false, explain:'No — NC means Non-Commercial. She could use it in a free subject, but not in anything sold for profit, without contacting the creator first.',
+        cheat:'CC BY-NC — free use is fine, commercial use is not'
+      },
+      {
+        code:'CC BY-SA', question:'Priya wants to remix an open activity and share her adapted version publicly under her own, more restrictive licence (all rights reserved). Can she do this?',
+        answer:false, explain:'No — SA means Share-Alike. Any adaptation has to be released under the same licence as the original, so the openness carries forward.',
+        cheat:'CC BY-SA — adaptations must keep the same open licence'
+      }
+    ];
+
+    var answeredCount = 0;
+    var cheatEl = el('div',{class:'cheatsheet'});
+    cheatEl.style.display = 'none';
+
+    scenarios.forEach(function(sc, i){
+      var s = el('div',{class:'scenario'});
+      var tagRow = el('div');
+      tagRow.appendChild(el('span',{class:'tag', text:sc.code}));
+      s.appendChild(tagRow);
+      s.appendChild(el('p',{text:sc.question, style:'margin-top:10px;'}));
+      var row = el('div',{class:'yn-row'});
+      var fb = el('div',{class:'feedback'});
+      var yes = el('button',{class:'btn ghost'}); yes.textContent = 'Yes, she can';
+      var no = el('button',{class:'btn ghost'}); no.textContent = 'No, she can\'t';
+      function answer(val){
+        yes.disabled = true; no.disabled = true;
+        var correct = (val === sc.answer);
+        fb.className = 'feedback ' + (correct ? 'good' : 'nudge') + ' show';
+        fb.textContent = sc.explain;
+        var line = el('div');
+        line.textContent = sc.cheat;
+        cheatEl.appendChild(line);
+        cheatEl.style.display = 'block';
+        answeredCount++;
+        if(answeredCount === scenarios.length){ ctrl.btn.disabled = false; }
+      }
+      yes.addEventListener('click', function(){ answer(true); });
+      no.addEventListener('click', function(){ answer(false); });
+      row.appendChild(yes); row.appendChild(no);
+      s.appendChild(row);
+      s.appendChild(fb);
+      card.appendChild(s);
+    });
+
+    card.appendChild(el('p',{class:'lede', text:'Your reference sheet, built as you go:'}));
+    card.appendChild(cheatEl);
+
+    card.appendChild(el('hr',{class:'divider'}));
+    card.appendChild(el('p',{class:'lede', html:'<em>Priya now knows what she\'s allowed to do. But there\'s still a lingering myth about OER — that "open" means "lower quality." Time to test that.</em>'}));
+
+    var ctrl = continueBtn('Continue to Stop 4', function(){ markComplete(2); goTo(3); }, true);
+    card.appendChild(ctrl.row);
+    container.appendChild(card);
+  }
+
+  /* ============== STOP 4: QUALITY CAVE ============== */
+  function renderQuality(container){
+    var card = stageShell('Stop 4 of 7 — Quality Cave', 'Find the evidence', '"Open" doesn\'t mean amateur. Below is The Secret Lives of Cells, an open textbook published through CSU\'s Open Textbook Publishing initiative. Tap each marker to find the evidence that this is a genuinely high-quality resource.');
+
+    var markers = [
+      {t:'Peer review', d:'Reviewed by subject experts before publication — the same quality check you\'d expect from a traditional academic publisher.'},
+      {t:'Accessibility statement', d:'States how the resource meets accessibility standards, so students using assistive technology aren\'t an afterthought.'},
+      {t:'Version history', d:'Shows what\'s been updated and when — meaning the resource can improve over time, unlike a print textbook frozen at publication.'},
+      {t:'Learning outcomes', d:'Clearly stated at the start of each chapter, same as you\'d expect in any well-designed subject.'},
+      {t:'Author credentials', d:'Written by academics with expertise in the field — not an anonymous crowd-sourced document.'}
+    ];
+
+    var openedCount = 0;
+    var grid = el('div',{class:'marker-grid'});
+    markers.forEach(function(m){
+      var wrap = el('div',{class:'marker'});
+      var btn = el('button',{class:'marker-btn'});
+      var label = el('span'); label.textContent = m.t;
+      var status = el('span',{class:'marker-status', text:'PRESENT — tap to view'});
+      btn.appendChild(label); btn.appendChild(status);
+      var body = el('div',{class:'marker-body'});
+      body.appendChild(el('p',{text:m.d}));
+      var isOpen = false;
+      var seen = false;
+      btn.addEventListener('click', function(){
+        isOpen = !isOpen;
+        body.classList.toggle('open', isOpen);
+        if(!seen){ seen = true; openedCount++; if(openedCount === markers.length) ctrl.btn.disabled = false; }
+      });
+      wrap.appendChild(btn); wrap.appendChild(body);
+      grid.appendChild(wrap);
+    });
+    card.appendChild(grid);
+    card.appendChild(el('span',{class:'csu-badge', text:'★ Published by CSU Open Textbook Publishing'}));
+
+    card.appendChild(el('hr',{class:'divider'}));
+    card.appendChild(el('p',{html:'<strong>Compare this to a resource you already know is high quality</strong> — a prescribed textbook, a journal article, a subject guide. What\'s actually different?'}));
+    var ta = el('textarea',{placeholder:'Optional — jot a quick thought if one comes to mind…'});
+    card.appendChild(ta);
+
+    card.appendChild(el('hr',{class:'divider'}));
+    card.appendChild(el('p',{class:'lede', html:'<em>So high-quality, openly licensed resources exist — and they\'re not rare. Which raises the next question: could you build on one of these? Or even contribute your own work?</em>'}));
+
+    var ctrl = continueBtn('Continue to Stop 5', function(){ markComplete(3); goTo(4); }, true);
+    card.appendChild(ctrl.row);
+    container.appendChild(card);
+  }
+
+  /* ============== STOP 5: REMIX ROAD ============== */
+  function renderRemix(container){
+    var card = stageShell('Stop 5 of 7 — Remix Road', 'Adapt it, then attribute it', 'Contributing to open education doesn\'t mean writing a whole textbook from scratch. Here\'s a short teaching resource — a one-page activity on referencing basics, released under CC BY. Adapt it for a first-year nursing subject, then write the attribution statement that has to go with it.');
+
+    card.appendChild(el('p',{html:'<strong>Part A — Adapt.</strong> Which edit keeps the activity\'s learning intent while making it relevant to nursing students?'}));
+    var opts = [
+      'Swap the generic example ("citing a news article") for a nursing one ("citing a clinical practice guideline")',
+      'Delete the activity instructions and replace them with a lecture recording',
+      'Remove the referencing examples entirely to make it shorter'
+    ];
+    var list = el('div',{class:'choice-list'});
+    var fbA = el('div',{class:'feedback'});
+    opts.forEach(function(opt,i){
+      var b = el('button',{class:'choice-btn'}); b.textContent = opt;
+      b.addEventListener('click', function(){
+        Array.prototype.forEach.call(list.children, function(c){c.classList.remove('selected');});
+        b.classList.add('selected');
+        fbA.className = 'feedback ' + (i===0?'good':'nudge') + ' show';
+        fbA.textContent = i===0
+          ? 'Exactly — same skill, same structure, just a discipline-relevant example. That\'s a genuine adaptation.'
+          : 'That changes the activity\'s purpose rather than adapting it. A good adaptation keeps the learning intent intact.';
+        partADone = true;
+        checkReady();
+      });
+      list.appendChild(b);
+    });
+    card.appendChild(list); card.appendChild(fbA);
+
+    card.appendChild(el('hr',{class:'divider'}));
+    card.appendChild(el('p',{html:'<strong>Part B — Attribute.</strong> Assemble the attribution statement using Title, Author, Source and Licence (the "TASL" model). Click the pieces in order.'}));
+
+    var tiles = [
+      {id:'title', text:'"Referencing Basics Activity"'},
+      {id:'author', text:'by J. Chen, CSU Library,'},
+      {id:'licence', text:'is licensed under CC BY 4.0.'},
+      {id:'adapt', text:'Adapted by [you] to include nursing-specific examples.'}
+    ];
+    var order = ['title','author','licence','adapt'];
+    var placed = [];
+    var bank = el('div',{class:'word-bank'});
+    var line = el('div',{class:'attribution-line'});
+    line.appendChild(el('span',{text:'Click the tiles below in order →', style:'color:var(--ink-soft); font-size:0.85rem;'}));
+    var tileEls = {};
+    var partADone = false, partBDone = false;
+
+    tiles.forEach(function(t){
+      var tile = el('button',{class:'word-tile'});
+      tile.textContent = t.text;
+      tile.addEventListener('click', function(){
+        if(tile.classList.contains('used')) return;
+        var expected = order[placed.length];
+        if(t.id === expected){
+          tile.classList.add('used');
+          placed.push(t.id);
+          if(placed.length === 1) line.innerHTML = '';
+          var chip = el('span',{class:'filled-tile', text:t.text});
+          line.appendChild(chip);
+          if(placed.length === order.length){
+            partBDone = true;
+            checkReady();
+          }
+        } else {
+          tile.style.borderColor = 'var(--coral)';
+          setTimeout(function(){ tile.style.borderColor = ''; }, 500);
+        }
+      });
+      tileEls[t.id] = tile;
+      bank.appendChild(tile);
+    });
+    card.appendChild(bank);
+    card.appendChild(line);
+
+    var note = el('p',{class:'lede', text:'That\'s genuinely what adapting and attributing an open resource looks like. No special software, no legal review required.', style:'display:none;'});
+    card.appendChild(note);
+
+    function checkReady(){
+      if(partADone && partBDone){
+        note.style.display = 'block';
+        ctrl.btn.disabled = false;
+      }
+    }
+
+    card.appendChild(el('hr',{class:'divider'}));
+    card.appendChild(el('p',{class:'lede', html:'<em>You\'ve just adapted one small resource. CSU has already published whole textbooks this way. Let\'s see what\'s been built.</em>'}));
+
+    var ctrl = continueBtn('Continue to Stop 6', function(){ markComplete(4); goTo(5); }, true);
+    card.appendChild(ctrl.row);
+    container.appendChild(card);
+  }
+
+  /* ============== STOP 6: VAULT ============== */
+  function renderVault(container){
+    var card = stageShell('Stop 6 of 7 — The Open Textbook Vault', 'Explore CSU\'s published catalogue', 'You\'ve seen what one open resource looks like. Now it\'s time to see the bigger picture. Explore the catalogue below and find one title relevant to your discipline, role, or curiosity.');
+
+    var titles = [
+      {t:'The Secret Lives of Cells', d:'Biology', desc:'Peer-reviewed, accessibility-statement-backed open textbook on cell biology.'},
+      {t:'Group Work Anthology', d:'Study Skills', desc:'A collaboratively built open resource on working effectively in teams.'},
+      {t:'Digital Skills for Study', d:'Digital Literacy', desc:'Practical open modules covering core digital skills for university study.'},
+      {t:'Extend Your Search and Review Skills', d:'Research Methods', desc:'CSU Library\'s own open module on advanced literature searching for evidence review.'}
+    ];
+    var grid = el('div',{class:'cat-grid'});
+    var chosen = null;
+    titles.forEach(function(ti){
+      var c = el('div',{class:'cat-card'});
+      c.appendChild(el('div',{class:'disc', text:ti.d}));
+      c.appendChild(el('h4',{text:ti.t}));
+      c.appendChild(el('p',{text:ti.desc}));
+      c.addEventListener('click', function(){
+        Array.prototype.forEach.call(grid.children, function(x){x.classList.remove('selected');});
+        c.classList.add('selected');
+        chosen = ti.t;
+        ctrl.btn.disabled = false;
+      });
+      grid.appendChild(c);
+    });
+    card.appendChild(grid);
+    card.appendChild(el('p',{html:'Browse the full live catalogue: <a href="https://opentext.csu.edu.au/catalog/" target="_blank" rel="noopener">opentext.csu.edu.au/catalog</a>'}));
+
+    card.appendChild(el('hr',{class:'divider'}));
+    card.appendChild(el('p',{html:'<strong>What\'s one thing about your chosen title that surprised you</strong> — or that you didn\'t expect to find in an open textbook?'}));
+    var ta = el('textarea',{placeholder:'Optional — a quick line is plenty.'});
+    card.appendChild(ta);
+
+    card.appendChild(el('hr',{class:'divider'}));
+    card.appendChild(el('p',{class:'lede', html:'<em>You\'ve seen the problem, the definitions, the licences, the quality, and the process. One question left: what\'s your next step?</em>'}));
+
+    var ctrl = continueBtn('Continue to your Open Action Card', function(){ markComplete(5); goTo(6); }, true);
+    card.appendChild(ctrl.row);
+    container.appendChild(card);
+  }
+
+  /* ============== FINAL: ACTION CARD ============== */
+  function renderFinal(container){
+    var card = stageShell('Final Challenge', 'Your Open Action Card', 'Every stage of this journey has been building toward one thing — not just understanding open education, but doing something with it. Choose the action that fits you right now.');
+
+    var actions = [
+      {key:'finder', emoji:'🔍', title:'Finder', line:'I will look for an OER that could replace or supplement a current resource.', linkText:'Browse CSU\'s OER guide', href:'https://opentext.csu.edu.au/catalog/'},
+      {key:'adapter', emoji:'🌍', title:'Adapter', line:'I will explore how an existing open resource could be localised for my students.', linkText:'See adaptation guidance', href:'https://opentext.csu.edu.au/catalog/'},
+      {key:'creator', emoji:'✍️', title:'Creator', line:'I will consider whether something I\'ve already made could become openly licensed.', linkText:'Contact the Open Textbook Publishing team', href:'mailto:library@csu.edu.au'},
+      {key:'reviewer', emoji:'✅', title:'Reviewer', line:'I will help assess the quality, accessibility, or relevance of an OER.', linkText:'Read the review checklist', href:'https://opentext.csu.edu.au/catalog/'},
+      {key:'champion', emoji:'📣', title:'Champion', line:'I will share CSU\'s Open Textbook Publishing space with a colleague.', linkText:'Open the catalogue to share', href:'https://opentext.csu.edu.au/catalog/'}
+    ];
+
+    var grid = el('div',{class:'card-grid'});
+    var resultWrap = el('div');
+    actions.forEach(function(a){
+      var c = el('button',{class:'action-choice'});
+      c.appendChild(el('div',{class:'emoji', text:a.emoji}));
+      c.appendChild(el('h4',{text:a.title}));
+      c.appendChild(el('p',{text:a.line}));
+      c.addEventListener('click', function(){
+        Array.prototype.forEach.call(grid.children, function(x){x.classList.remove('selected');});
+        c.classList.add('selected');
+        state.data.actionCard = a.key;
+        saveState();
+        showResult(a);
+      });
+      grid.appendChild(c);
+    });
+    card.appendChild(grid);
+    card.appendChild(resultWrap);
+
+    function showResult(a){
+      resultWrap.innerHTML = '';
+      var fc = el('div',{class:'final-card'});
+      fc.appendChild(el('span',{class:'stamp-seal', text:'OPEN ACTION CARD · ' + a.title.toUpperCase()}));
+      fc.appendChild(el('h3',{text:a.emoji + '  ' + a.title}));
+      fc.appendChild(el('p',{text:a.line}));
+      var link = el('a',{class:'next-step', href:a.href, target:'_blank', rel:'noopener'});
+      link.textContent = a.linkText + ' →';
+      fc.appendChild(link);
+      resultWrap.appendChild(fc);
+      var closing = el('p',{class:'lede', style:'margin-top:20px;', html:'<em>That\'s the journey — from paywall to open access. Thanks for playing. Screenshot your Open Action Card, or share this game with a colleague.</em>'});
+      resultWrap.appendChild(closing);
+      markComplete(6);
+    }
+
+    container.appendChild(card);
+  }
+
+  /* ============== ROUTER ============== */
+  var RENDERERS = [renderGate, renderOpen, renderLicence, renderQuality, renderRemix, renderVault, renderFinal];
+
+  function render(){
+    var container = document.getElementById('stageContainer');
+    container.innerHTML = '';
+    if(!state.started){
+      document.getElementById('trailWrap').style.display = 'none';
+      renderStart(container);
+      return;
+    }
+    renderTrail();
+    var idx = state.currentStage;
+    var fn = RENDERERS[idx];
+    if(fn) fn(container);
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
